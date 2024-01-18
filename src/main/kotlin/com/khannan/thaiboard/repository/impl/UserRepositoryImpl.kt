@@ -1,0 +1,157 @@
+package com.khannan.thaiboard.repository.impl
+
+import com.khannan.thaiboard.dto.UserDto
+import com.khannan.thaiboard.model.Role
+import com.khannan.thaiboard.model.User
+import com.khannan.thaiboard.repository.UserRepository
+import org.springframework.stereotype.Repository
+import java.sql.Connection
+import java.sql.SQLException
+import javax.sql.DataSource
+
+@Repository
+class UserRepositoryImpl(db: DataSource) : UserRepository {
+    private val connection: Connection = db.connection
+
+    init {
+        try {
+            connection.createStatement().use { statement ->
+                statement.executeUpdate(CREATE_TABLE_USERS)
+            }
+        } catch (e: SQLException) {
+            println(e.message)
+        }
+    }
+
+    override fun findByEmail(email: String): User {
+        connection.prepareStatement(SELECT_USER_BY_EMAIL).use { statement ->
+            statement.setString(1, email)
+            val resultSet = statement.executeQuery()
+
+            if (resultSet.next()) {
+                val user = with(resultSet) {
+                    User(
+                        id = getLong(1),
+                        firstName = getString(2),
+                        lastName = getString(3),
+                        email = getString(4),
+                        phone = getString(5),
+                        role = Role.valueOf(getString(6)),
+                        password = getString(7)
+                    )
+                }
+                return user
+            } else {
+                throw Exception("User with $email not found")
+            }
+
+        }
+    }
+
+    override fun findById(id: Long): User {
+        connection.prepareStatement(SELECT_USER_BY_ID).use { statement ->
+            statement.setLong(1, id)
+            val resultSet = statement.executeQuery()
+
+            if (resultSet.next()) {
+                return with(resultSet) {
+                    User(
+                        id = getLong(1),
+                        firstName = getString(2),
+                        lastName = getString(3),
+                        email = getString(4),
+                        phone = getString(5),
+                        role = Role.valueOf(getString(6)),
+                        password = getString(7)
+                    )
+                }
+            } else {
+                throw Exception("User with $id not found")
+            }
+        }
+    }
+
+    override fun findAll(): List<User> {
+        connection.createStatement().use { statement ->
+            val resultSet = statement.executeQuery(SELECT_ALL_USERS)
+            val users = mutableListOf<User>()
+
+            while (resultSet.next()) {
+                with(resultSet) {
+                    users.add(
+                        User(
+                            id = getLong(1),
+                            firstName = getString(2),
+                            lastName = getString(3),
+                            email = getString(4),
+                            phone = getString(5),
+                            role = Role.valueOf(getString(6)),
+                            password = getString(7)
+                        )
+                    )
+                }
+            }
+
+            return users
+        }
+    }
+
+    override fun create(userDto: UserDto): Boolean {
+        connection.prepareStatement(CREATE_USER).use { statement ->
+            statement.setString(1, userDto.firstName)
+            statement.setString(2, userDto.lastName)
+            statement.setString(3, userDto.email)
+            statement.setString(4, userDto.phone)
+            statement.setString(5, userDto.role.name)
+            statement.setString(6, userDto.password)
+            val resultSet = statement.executeUpdate()
+            return resultSet > 0
+        }
+    }
+
+    override fun update(userId: Long, userDto: UserDto): Boolean {
+        connection.prepareStatement(UPDATE_USER_BY_ID).use { statement ->
+            statement.setString(1, userDto.firstName)
+            statement.setString(2, userDto.lastName)
+            statement.setString(3, userDto.email)
+            statement.setString(4, userDto.phone)
+            statement.setString(5, userDto.role.name)
+            statement.setString(6, userDto.password)
+            statement.setLong(7, userDto.id)
+            val resultSet = statement.executeUpdate()
+            return resultSet > 0
+        }
+    }
+
+    override fun delete(userId: Long): Boolean {
+        connection.prepareStatement(DELETE_USER_BY_ID).use { statement ->
+            statement.setLong(1, userId)
+            val resultSet = statement.executeUpdate()
+            return resultSet > 0
+        }
+    }
+
+    companion object {
+        private const val CREATE_TABLE_USERS =
+            """               
+                CREATE TABLE IF NOT EXISTS users
+                (
+                    id         BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+                    first_name VARCHAR(255)        NOT NULL,
+                    last_name  VARCHAR(255)        NOT NULL,
+                    email      VARCHAR(255) UNIQUE NOT NULL,
+                    phone      VARCHAR(30),
+                    role       VARCHAR(20)         NOT NULL,
+                    password   VARCHAR(255)        NOT NULL
+                )
+            """
+        private const val SELECT_ALL_USERS = "SELECT * FROM users"
+        private const val SELECT_USER_BY_ID = "SELECT * FROM users WHERE id = ?"
+        private const val SELECT_USER_BY_EMAIL = "SELECT * FROM users WHERE email = ?"
+        private const val CREATE_USER =
+            "INSERT INTO users (first_name, last_name, email, phone, role, password) VALUES (?, ?, ?, ?, ?, ?)"
+        private const val UPDATE_USER_BY_ID =
+            "UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, role = ?, password = ? WHERE id = ?"
+        private const val DELETE_USER_BY_ID = "DELETE FROM users WHERE id = ?"
+    }
+}
