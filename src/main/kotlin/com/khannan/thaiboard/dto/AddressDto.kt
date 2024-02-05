@@ -1,7 +1,7 @@
 package com.khannan.thaiboard.dto
 
 data class AddressDto(
-    val id: Long,
+    val id: Long = 0,
     val country: String,
     val region: String,
     val district: String,

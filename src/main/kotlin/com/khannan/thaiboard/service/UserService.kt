@@ -9,11 +9,11 @@ import java.util.stream.Collectors
 @Service
 class UserService(private val userRepository: UserRepository, private val userMapper: UserMapper) {
     fun create(userDto: UserDto): Boolean {
-        return userRepository.create(userDto)
+        return userRepository.create(userMapper.toUser(userDto))
     }
 
     fun update(userId: Long, userDto: UserDto): Boolean {
-        return userRepository.update(userId, userDto)
+        return userRepository.update(userId, userMapper.toUser(userDto))
     }
 
     fun getAllUsers(): List<UserDto> {
@@ -31,6 +31,7 @@ class UserService(private val userRepository: UserRepository, private val userMa
         return userMapper.toUserDto(userRepository.findById(userId))
     }
 
+    @Suppress("Unused")
     fun getUserEmail(email: String): UserDto {
         return userMapper.toUserDto(userRepository.findByEmail(email))
     }

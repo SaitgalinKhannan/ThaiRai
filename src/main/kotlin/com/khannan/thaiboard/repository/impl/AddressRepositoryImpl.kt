@@ -47,7 +47,7 @@ class AddressRepositoryImpl(db: DataSource) : AddressRepository {
         }
     }
 
-    override fun create(addressDto: AddressDto): AddressDto {
+    override fun create(addressDto: Address): Address {
         connection.prepareStatement(CREATE_ADDRESS, Statement.RETURN_GENERATED_KEYS).use { statement ->
             with(addressDto) {
                 statement.setString(1, country)

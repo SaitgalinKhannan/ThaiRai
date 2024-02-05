@@ -3,7 +3,9 @@ package com.khannan.thaiboard.service
 import com.khannan.thaiboard.dto.PhotoDto
 import com.khannan.thaiboard.dto.RealEstateDto
 import com.khannan.thaiboard.exception.UserIsNotOwnerException
+import com.khannan.thaiboard.mapper.PhotoMapper
 import com.khannan.thaiboard.mapper.RealEstateMapper
+import com.khannan.thaiboard.model.Address
 import com.khannan.thaiboard.model.RealEstate
 import com.khannan.thaiboard.model.Status
 import com.khannan.thaiboard.repository.AddressRepository
@@ -22,11 +24,12 @@ class RealEstateService(
     private val realEstateRepository: RealEstateRepository,
     private val realEstateMapper: RealEstateMapper,
     private val addressRepository: AddressRepository,
-    private val photoRepository: PhotoRepository
+    private val photoRepository: PhotoRepository,
+    private val photoMapper: PhotoMapper
 ) {
-    fun create(realEstateDto: RealEstateDto, files: List<MultipartFile>, uploadPath: File): RealEstateDto {
-        val address = addressRepository.create(realEstateDto.address)
-        val realEstate = realEstateRepository.create(realEstateDto.copy(address = address))
+    fun create(realEstate: RealEstate, address: Address, files: List<MultipartFile>, uploadPath: File): RealEstateDto {
+        val newAddress = addressRepository.create(address)
+        val newRealEstate = realEstateRepository.create(realEstate.copy(addressId = newAddress.id))
         val photoDtoList = mutableListOf<PhotoDto>()
 
         for (photo in files) {
@@ -37,31 +40,30 @@ class RealEstateService(
             photoDtoList.add(
                 PhotoDto(
                     id = 0,
-                    realEstateId = realEstate.id,
+                    realEstateId = newRealEstate.id,
                     imageUrl = imageUrl
                 )
             )
         }
 
-        //photoDtoList = photoRepository.createBatch(photoDtoList).toMutableList()
-
-        return realEstate.copy(photos = photoRepository.createBatch(photoDtoList))
+        return realEstateMapper.toRealEstateDto(newRealEstate).copy(photos = photoRepository.createBatch(photoDtoList))
     }
 
     fun realEstateById(realEstateId: Long): RealEstateDto {
-        val advertisement = realEstateRepository.findById(realEstateId)
-        return realEstateMapper.toRealEstateDto(advertisement)
+        val realEstate = realEstateRepository.findById(realEstateId)
+        val photos = photoMapper.toPhotoDtoList(photoRepository.findAllById(realEstateId))
+        return realEstateMapper.toRealEstateDto(realEstate).copy(photos = photos)
     }
 
-    fun update(realEstateId: Long, realEstateDto: RealEstateDto): Boolean {
-        val owner = userRepository.findById(realEstateDto.owner.id)
-        val advertisement = realEstateRepository.findById(realEstateDto.id)
+    fun update(realEstateId: Long, realEstate: RealEstate): Boolean {
+        val owner = userRepository.findById(realEstate.ownerId)
+        val newRealEstate = realEstateRepository.findById(realEstate.id)
 
-        if (owner.id != advertisement.ownerId) {
+        if (owner.id != newRealEstate.ownerId) {
             throw UserIsNotOwnerException("Вы пытаетесь изменить чужую запись")
         }
 
-        return realEstateRepository.update(realEstateDto)
+        return realEstateRepository.update(realEstate)
     }
 
     fun allRealEstate(): List<RealEstateDto> {
@@ -72,9 +74,9 @@ class RealEstateService(
             .collect(Collectors.toList())
     }
 
-    fun allRealEstatesByActiveStatus(): List<RealEstateDto> {
+    fun allRealEstatesByStatus(status: Status): List<RealEstateDto> {
         return realEstateRepository
-            .findAllByStatus(Status.ACTIVE)
+            .findAllByStatus(status)
             .stream()
             .map { realEstateMapper.toRealEstateDto(it) }
             .collect(Collectors.toList())

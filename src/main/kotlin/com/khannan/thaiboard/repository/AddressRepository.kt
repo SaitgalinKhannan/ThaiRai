@@ -6,6 +6,6 @@ import com.khannan.thaiboard.model.Address
 interface AddressRepository {
     fun delete(userId: Long): Boolean
     fun update(addressId: Long, addressDto: AddressDto): Boolean
-    fun create(addressDto: AddressDto): AddressDto
+    fun create(addressDto: Address): Address
     fun findById(id: Long): Address
 }

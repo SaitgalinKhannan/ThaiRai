@@ -7,7 +7,7 @@ data class RealEstate(
     val ownerId: Long,
     val name: String,
     val price: Float,
-    val status: String,
+    val status: Status,
     val newBuilding: Boolean,
     val type: String,
     val roomCount: Int,

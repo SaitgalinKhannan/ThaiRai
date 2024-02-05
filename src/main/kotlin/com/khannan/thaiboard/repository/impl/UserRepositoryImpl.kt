@@ -1,6 +1,5 @@
 package com.khannan.thaiboard.repository.impl
 
-import com.khannan.thaiboard.dto.UserDto
 import com.khannan.thaiboard.model.Role
 import com.khannan.thaiboard.model.User
 import com.khannan.thaiboard.repository.UserRepository
@@ -96,28 +95,28 @@ class UserRepositoryImpl(db: DataSource) : UserRepository {
         }
     }
 
-    override fun create(userDto: UserDto): Boolean {
+    override fun create(user: User): Boolean {
         connection.prepareStatement(CREATE_USER).use { statement ->
-            statement.setString(1, userDto.firstName)
-            statement.setString(2, userDto.lastName)
-            statement.setString(3, userDto.email)
-            statement.setString(4, userDto.phone)
-            statement.setString(5, userDto.role.name)
-            statement.setString(6, userDto.password)
+            statement.setString(1, user.firstName)
+            statement.setString(2, user.lastName)
+            statement.setString(3, user.email)
+            statement.setString(4, user.phone)
+            statement.setString(5, user.role.name)
+            statement.setString(6, user.password)
             val resultSet = statement.executeUpdate()
             return resultSet > 0
         }
     }
 
-    override fun update(userId: Long, userDto: UserDto): Boolean {
+    override fun update(userId: Long, user: User): Boolean {
         connection.prepareStatement(UPDATE_USER_BY_ID).use { statement ->
-            statement.setString(1, userDto.firstName)
-            statement.setString(2, userDto.lastName)
-            statement.setString(3, userDto.email)
-            statement.setString(4, userDto.phone)
-            statement.setString(5, userDto.role.name)
-            statement.setString(6, userDto.password)
-            statement.setLong(7, userDto.id)
+            statement.setString(1, user.firstName)
+            statement.setString(2, user.lastName)
+            statement.setString(3, user.email)
+            statement.setString(4, user.phone)
+            statement.setString(5, user.role.name)
+            statement.setString(6, user.password)
+            statement.setLong(7, user.id)
             val resultSet = statement.executeUpdate()
             return resultSet > 0
         }

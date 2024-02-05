@@ -1,6 +1,5 @@
 package com.khannan.thaiboard.repository.impl
 
-import com.khannan.thaiboard.dto.RealEstateDto
 import com.khannan.thaiboard.exception.RealEstateNotFoundException
 import com.khannan.thaiboard.model.RealEstate
 import com.khannan.thaiboard.model.Status
@@ -40,7 +39,7 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
                         ownerId = getLong(2),
                         name = getString(3),
                         price = getFloat(4),
-                        status = getString(5),
+                        status = Status.valueOf(getString(5)),
                         newBuilding = getBoolean(6),
                         type = getString(7),
                         roomCount = getInt(8),
@@ -74,7 +73,7 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
                             ownerId = getLong(2),
                             name = getString(3),
                             price = getFloat(4),
-                            status = getString(5),
+                            status = Status.valueOf(getString(5)),
                             newBuilding = getBoolean(6),
                             type = getString(7),
                             roomCount = getInt(8),
@@ -109,7 +108,7 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
                             ownerId = getLong(2),
                             name = getString(3),
                             price = getFloat(4),
-                            status = getString(5),
+                            status = Status.valueOf(getString(5)),
                             newBuilding = getBoolean(6),
                             type = getString(7),
                             roomCount = getInt(8),
@@ -130,22 +129,22 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
         }
     }
 
-    override fun create(realEstateDto: RealEstateDto): RealEstateDto {
+    override fun create(realEstate: RealEstate): RealEstate {
         connection.prepareStatement(CREATE_REAL_ESTATES, Statement.RETURN_GENERATED_KEYS).use { statement ->
-            with(realEstateDto) {
-                statement.setLong(1, owner.id)
+            with(realEstate) {
+                statement.setLong(1, ownerId)
                 statement.setString(2, name)
                 statement.setFloat(3, price)
-                statement.setString(4, status)
+                statement.setString(4, status.name)
                 statement.setBoolean(5, newBuilding)
                 statement.setString(6, type)
                 statement.setInt(7, roomCount)
-                statement.setFloat(8,area)
+                statement.setFloat(8, area)
                 statement.setString(9, description)
                 statement.setInt(10, constructionYear)
                 statement.setInt(11, floor)
                 statement.setInt(12, numberOfFloors)
-                statement.setLong(13, address.id)
+                statement.setLong(13, addressId)
                 statement.setTimestamp(14, Timestamp.from(Instant.now()))
                 statement.setTimestamp(15, Timestamp.from(Instant.now()))
             }
@@ -153,14 +152,14 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
             val result = statement.executeUpdate()
             val generatedKeys = statement.generatedKeys
             return if (generatedKeys.next() && result > 0) {
-                realEstateDto.copy(id = generatedKeys.getLong(1))
+                realEstate.copy(id = generatedKeys.getLong(1))
             } else {
                 throw SQLException("Creating realEstate failed, no ID obtained.")
             }
         }
     }
 
-    override fun update(realEstateDto: RealEstateDto): Boolean {
+    override fun update(realEstate: RealEstate): Boolean {
         connection.prepareStatement(UPDATE_REAL_ESTATES_BY_ID).use { statement ->
 
             val resultSet = statement.executeUpdate()
@@ -182,7 +181,7 @@ class RealEstateRepositoryImpl(db: DataSource) : RealEstateRepository {
                             ownerId = getLong(2),
                             name = getString(3),
                             price = getFloat(4),
-                            status = getString(5),
+                            status = Status.valueOf(getString(5)),
                             newBuilding = getBoolean(6),
                             type = getString(7),
                             roomCount = getInt(8),

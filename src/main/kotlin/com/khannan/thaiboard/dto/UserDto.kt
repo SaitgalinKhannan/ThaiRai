@@ -3,7 +3,7 @@ package com.khannan.thaiboard.dto
 import com.khannan.thaiboard.model.Role
 
 class UserDto(
-    val id: Long,
+    val id: Long = 0,
     val firstName: String,
     val lastName: String,
     val email: String,

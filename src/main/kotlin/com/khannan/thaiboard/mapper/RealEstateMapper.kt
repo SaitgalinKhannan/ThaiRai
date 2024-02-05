@@ -58,7 +58,7 @@ class RealEstateMapper(
                 address = addressMapper.toAddressDto(addressRepository.findById(addressId)),
                 createdAt = createdAt,
                 updatedAt = updatedAt,
-                photos = photoRepository.findAllById(id).map { photo -> photoMapper.toPhotoDto(photo) }
+                photos = photoMapper.toPhotoDtoList(photoRepository.findAllById(id))
             )
         }
     }

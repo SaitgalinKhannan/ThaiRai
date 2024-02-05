@@ -43,7 +43,7 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
     }
 
     override fun findAllById(id: Long): List<Photo> {
-        connection.prepareStatement(SELECT_PHOTO_BY_ID).use { statement ->
+        connection.prepareStatement(SELECT_PHOTO_BY_REAL_ESTATE_ID).use { statement ->
             statement.setLong(1, id)
             val resultSet = statement.executeQuery()
             val photos = mutableListOf<Photo>()
@@ -140,7 +140,8 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
                     image_url      VARCHAR(255)                        NOT NULL
                 )
             """
-        private const val SELECT_PHOTO_BY_ID = "SELECT * FROM photos WHERE real_estate_id = ?"
+        private const val SELECT_PHOTO_BY_REAL_ESTATE_ID = "SELECT * FROM photos WHERE real_estate_id = ?"
+        private const val SELECT_PHOTO_BY_ID = "SELECT * FROM photos WHERE id = ?"
         private const val CREATE_PHOTO = "INSERT INTO photos (real_estate_id, image_url) VALUES (?, ?)"
         private const val UPDATE_PHOTO_BY_ID = "UPDATE photos SET real_estate_id = ?, image_url = ? WHERE id = ?"
         private const val DELETE_PHOTO_BY_ID = "DELETE FROM photos WHERE id = ?"

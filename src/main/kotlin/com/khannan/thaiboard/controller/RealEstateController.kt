@@ -1,6 +1,9 @@
 package com.khannan.thaiboard.controller
 
 import com.khannan.thaiboard.dto.RealEstateDto
+import com.khannan.thaiboard.mapper.AddressMapper
+import com.khannan.thaiboard.mapper.RealEstateMapper
+import com.khannan.thaiboard.model.Status
 import com.khannan.thaiboard.service.RealEstateService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.*
@@ -10,7 +13,11 @@ import java.io.File
 
 @RestController
 @RequestMapping(path = ["/realestates"])
-class RealEstateController(private val realEstateService: RealEstateService) {
+class RealEstateController(
+    private val realEstateService: RealEstateService,
+    private val realEstateMapper: RealEstateMapper,
+    private val addressMapper: AddressMapper
+) {
     @Value("\${upload.path}")
     private val uploadPath: String = ""
 
@@ -20,8 +27,12 @@ class RealEstateController(private val realEstateService: RealEstateService) {
         @RequestParam("files") files: List<MultipartFile>
     ): RealEstateDto {
         val uploadFolder = File(uploadPath)
-
-        return realEstateService.create(realEstateDto, files, uploadFolder)
+        if (!uploadFolder.exists() && uploadFolder.mkdir()) {
+            println("$uploadPath folder created")
+        }
+        val realEstate = realEstateMapper.toRealEstate(realEstateDto)
+        val address = addressMapper.toAddress(realEstateDto.address)
+        return realEstateService.create(realEstate, address, files, uploadFolder)
     }
 
     @GetMapping("/{realEstateId}")
@@ -31,6 +42,7 @@ class RealEstateController(private val realEstateService: RealEstateService) {
 
     @GetMapping
     fun all(): List<RealEstateDto> {
+        println("Here")
         return realEstateService.allRealEstate()
     }
 
@@ -44,9 +56,14 @@ class RealEstateController(private val realEstateService: RealEstateService) {
         return realEstateService.allRealEstateSortedByOwner()
     }
 
-    @GetMapping("/active")
-    fun allByStatusActive(): List<RealEstateDto> {
-        return realEstateService.allRealEstatesByActiveStatus()
+    @GetMapping("/rent")
+    fun allByStatusRent(): List<RealEstateDto> {
+        return realEstateService.allRealEstatesByStatus(Status.RENT)
+    }
+
+    @GetMapping("/sale")
+    fun allByStatusSale(): List<RealEstateDto> {
+        return realEstateService.allRealEstatesByStatus(Status.SALE)
     }
 
     @GetMapping("/user/{userId}")
@@ -57,8 +74,9 @@ class RealEstateController(private val realEstateService: RealEstateService) {
     @PatchMapping("/{realEstateId}")
     fun update(
         @PathVariable realEstateId: Long,
-        @RequestBody advertisementDto: RealEstateDto
+        @RequestBody realEstateDto: RealEstateDto
     ): Boolean {
-        return realEstateService.update(realEstateId, advertisementDto)
+        val realEstate = realEstateMapper.toRealEstate(realEstateDto)
+        return realEstateService.update(realEstateId, realEstate)
     }
 }
