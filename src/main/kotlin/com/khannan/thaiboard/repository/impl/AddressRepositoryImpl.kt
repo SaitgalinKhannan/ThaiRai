@@ -3,6 +3,9 @@ package com.khannan.thaiboard.repository.impl
 import com.khannan.thaiboard.dto.AddressDto
 import com.khannan.thaiboard.model.Address
 import com.khannan.thaiboard.repository.AddressRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Repository
 import java.sql.Connection
 import java.sql.SQLException
@@ -12,6 +15,7 @@ import javax.sql.DataSource
 @Repository
 class AddressRepositoryImpl(db: DataSource) : AddressRepository {
     private val connection: Connection = db.connection
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 
     init {
         try {
@@ -23,13 +27,13 @@ class AddressRepositoryImpl(db: DataSource) : AddressRepository {
         }
     }
 
-    override fun findById(id: Long): Address {
+    override suspend fun findById(id: Long): Address = withContext(dispatcher) {
         connection.prepareStatement(SELECT_ADDRESS_BY_ID).use { statement ->
             statement.setLong(1, id)
             val resultSet = statement.executeQuery()
 
-            if (resultSet.next()) {
-                return with(resultSet) {
+            return@use if (resultSet.next()) {
+                with(resultSet) {
                     Address(
                         id = getLong(1),
                         country = getString(2),
@@ -47,7 +51,7 @@ class AddressRepositoryImpl(db: DataSource) : AddressRepository {
         }
     }
 
-    override fun create(addressDto: Address): Address {
+    override suspend fun create(addressDto: Address): Long = withContext(dispatcher) {
         connection.prepareStatement(CREATE_ADDRESS, Statement.RETURN_GENERATED_KEYS).use { statement ->
             with(addressDto) {
                 statement.setString(1, country)
@@ -61,15 +65,15 @@ class AddressRepositoryImpl(db: DataSource) : AddressRepository {
 
             val result = statement.executeUpdate()
             val generatedKeys = statement.generatedKeys
-            return if (generatedKeys.next() && result > 0) {
-                addressDto.copy(id = generatedKeys.getLong(1))
+            return@use if (generatedKeys.next() && result > 0) {
+                generatedKeys.getLong(1)
             } else {
-                throw SQLException("Creating address failed, no ID obtained.")
+                throw Exception("Creating address failed, no ID obtained.")
             }
         }
     }
 
-    override fun update(addressId: Long, addressDto: AddressDto): Boolean {
+    override suspend fun update(addressId: Long, addressDto: AddressDto): Boolean = withContext(dispatcher) {
         connection.prepareStatement(UPDATE_ADDRESS_BY_ID).use { statement ->
             with(addressDto) {
                 statement.setString(1, country)
@@ -82,15 +86,15 @@ class AddressRepositoryImpl(db: DataSource) : AddressRepository {
                 statement.setLong(8, id)
             }
             val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            return@use resultSet > 0
         }
     }
 
-    override fun delete(userId: Long): Boolean {
+    override suspend fun delete(userId: Long): Boolean = withContext(dispatcher) {
         connection.prepareStatement(DELETE_ADDRESS_BY_ID).use { statement ->
             statement.setLong(1, userId)
             val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            return@use resultSet > 0
         }
     }
 

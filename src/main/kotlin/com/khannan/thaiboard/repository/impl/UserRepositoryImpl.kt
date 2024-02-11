@@ -3,14 +3,18 @@ package com.khannan.thaiboard.repository.impl
 import com.khannan.thaiboard.model.Role
 import com.khannan.thaiboard.model.User
 import com.khannan.thaiboard.repository.UserRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Repository
 import java.sql.Connection
 import java.sql.SQLException
+import java.sql.Statement
 import javax.sql.DataSource
 
 @Repository
 class UserRepositoryImpl(db: DataSource) : UserRepository {
     private val connection: Connection = db.connection
+    private val dispatcher = Dispatchers.IO
 
     init {
         try {
@@ -22,46 +26,44 @@ class UserRepositoryImpl(db: DataSource) : UserRepository {
         }
     }
 
-    override fun findByEmail(email: String): User {
+    override suspend fun findByEmail(email: String): User = withContext(dispatcher) {
         connection.prepareStatement(SELECT_USER_BY_EMAIL).use { statement ->
             statement.setString(1, email)
             val resultSet = statement.executeQuery()
 
             if (resultSet.next()) {
-                val user = with(resultSet) {
-                    User(
+                with(resultSet) {
+                    return@use User(
                         id = getLong(1),
                         firstName = getString(2),
                         lastName = getString(3),
                         email = getString(4),
                         phone = getString(5),
                         role = Role.valueOf(getString(6)),
-                        password = getString(7)
+                        accountPassword = getString(7)
                     )
                 }
-                return user
             } else {
-                throw Exception("User with $email not found")
+                throw Exception("User with email = $email not found")
             }
-
         }
     }
 
-    override fun findById(id: Long): User {
+    override suspend fun findById(id: Long): User = withContext(dispatcher) {
         connection.prepareStatement(SELECT_USER_BY_ID).use { statement ->
             statement.setLong(1, id)
             val resultSet = statement.executeQuery()
 
             if (resultSet.next()) {
-                return with(resultSet) {
-                    User(
+                with(resultSet) {
+                    return@use User(
                         id = getLong(1),
                         firstName = getString(2),
                         lastName = getString(3),
                         email = getString(4),
                         phone = getString(5),
                         role = Role.valueOf(getString(6)),
-                        password = getString(7)
+                        accountPassword = getString(7)
                     )
                 }
             } else {
@@ -70,7 +72,7 @@ class UserRepositoryImpl(db: DataSource) : UserRepository {
         }
     }
 
-    override fun findAll(): List<User> {
+    override suspend fun findAll(): List<User> = withContext(dispatcher) {
         connection.createStatement().use { statement ->
             val resultSet = statement.executeQuery(SELECT_ALL_USERS)
             val users = mutableListOf<User>()
@@ -85,48 +87,54 @@ class UserRepositoryImpl(db: DataSource) : UserRepository {
                             email = getString(4),
                             phone = getString(5),
                             role = Role.valueOf(getString(6)),
-                            password = getString(7)
+                            accountPassword = getString(7)
                         )
                     )
                 }
             }
 
-            return users
+            return@use users
         }
     }
 
-    override fun create(user: User): Boolean {
-        connection.prepareStatement(CREATE_USER).use { statement ->
+    override suspend fun create(user: User): User = withContext(dispatcher) {
+        connection.prepareStatement(CREATE_USER, Statement.RETURN_GENERATED_KEYS).use { statement ->
             statement.setString(1, user.firstName)
             statement.setString(2, user.lastName)
             statement.setString(3, user.email)
             statement.setString(4, user.phone)
             statement.setString(5, user.role.name)
-            statement.setString(6, user.password)
-            val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            statement.setString(6, user.accountPassword)
+
+            val result = statement.executeUpdate()
+            val generatedKeys = statement.generatedKeys
+            return@use if (generatedKeys.next() && result > 0) {
+                user.copy(id = generatedKeys.getLong(1))
+            } else {
+                throw Exception("Creating user failed.")
+            }
         }
     }
 
-    override fun update(userId: Long, user: User): Boolean {
+    override suspend fun update(userId: Long, user: User): Boolean = withContext(dispatcher) {
         connection.prepareStatement(UPDATE_USER_BY_ID).use { statement ->
             statement.setString(1, user.firstName)
             statement.setString(2, user.lastName)
             statement.setString(3, user.email)
             statement.setString(4, user.phone)
             statement.setString(5, user.role.name)
-            statement.setString(6, user.password)
+            statement.setString(6, user.accountPassword)
             statement.setLong(7, user.id)
             val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            return@use resultSet > 0
         }
     }
 
-    override fun delete(userId: Long): Boolean {
+    override suspend fun delete(userId: Long): Boolean = withContext(dispatcher) {
         connection.prepareStatement(DELETE_USER_BY_ID).use { statement ->
             statement.setLong(1, userId)
             val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            return@use resultSet > 0
         }
     }
 

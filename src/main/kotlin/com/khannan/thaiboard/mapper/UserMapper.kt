@@ -15,7 +15,7 @@ class UserMapper {
                 email = email,
                 phone = phone,
                 role = role,
-                password = password
+                accountPassword = password
             )
         }
     }
@@ -29,7 +29,7 @@ class UserMapper {
                 email = email,
                 phone = phone,
                 role = role,
-                password = password,
+                password = accountPassword,
             )
         }
     }

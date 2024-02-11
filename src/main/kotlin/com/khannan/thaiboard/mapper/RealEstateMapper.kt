@@ -39,7 +39,7 @@ class RealEstateMapper(
         }
     }
 
-    fun toRealEstateDto(realEstate: RealEstate): RealEstateDto {
+    suspend fun toRealEstateDto(realEstate: RealEstate): RealEstateDto {
         return with(realEstate) {
             RealEstateDto(
                 id = id,

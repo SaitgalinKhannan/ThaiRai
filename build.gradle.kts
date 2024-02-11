@@ -1,6 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val postgresql: String by project
+val jjwt: String by project
+val coroutines: String by project
 
 plugins {
     id("org.springframework.boot") version "3.2.2"
@@ -22,18 +24,19 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${coroutines}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:${coroutines}")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
-    //implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.postgresql:postgresql:$postgresql")
+    implementation("io.jsonwebtoken:jjwt-api:$jjwt")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
-    //developmentOnly("org.springframework.boot:spring-boot-docker-compose")
-    //runtimeOnly("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    //testImplementation("org.springframework.security:spring-security-test")
-
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jjwt")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jjwt")
 }
 
 tasks.withType<KotlinCompile> {

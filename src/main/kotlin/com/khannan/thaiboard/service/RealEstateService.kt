@@ -2,7 +2,6 @@ package com.khannan.thaiboard.service
 
 import com.khannan.thaiboard.dto.PhotoDto
 import com.khannan.thaiboard.dto.RealEstateDto
-import com.khannan.thaiboard.exception.UserIsNotOwnerException
 import com.khannan.thaiboard.mapper.PhotoMapper
 import com.khannan.thaiboard.mapper.RealEstateMapper
 import com.khannan.thaiboard.model.Address
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.util.*
-import java.util.stream.Collectors
 
 @Service
 class RealEstateService(
@@ -27,9 +25,14 @@ class RealEstateService(
     private val photoRepository: PhotoRepository,
     private val photoMapper: PhotoMapper
 ) {
-    fun create(realEstate: RealEstate, address: Address, files: List<MultipartFile>, uploadPath: File): RealEstateDto {
-        val newAddress = addressRepository.create(address)
-        val newRealEstate = realEstateRepository.create(realEstate.copy(addressId = newAddress.id))
+    suspend fun create(
+        realEstate: RealEstate,
+        address: Address,
+        files: List<MultipartFile>,
+        uploadPath: File
+    ): RealEstateDto {
+        val addressId = addressRepository.create(address)
+        val newRealEstate = realEstateRepository.create(realEstate.copy(addressId = addressId))
         val photoDtoList = mutableListOf<PhotoDto>()
 
         for (photo in files) {
@@ -49,63 +52,55 @@ class RealEstateService(
         return realEstateMapper.toRealEstateDto(newRealEstate).copy(photos = photoRepository.createBatch(photoDtoList))
     }
 
-    fun realEstateById(realEstateId: Long): RealEstateDto {
+    suspend fun realEstateById(realEstateId: Long): RealEstateDto {
         val realEstate = realEstateRepository.findById(realEstateId)
         val photos = photoMapper.toPhotoDtoList(photoRepository.findAllById(realEstateId))
         return realEstateMapper.toRealEstateDto(realEstate).copy(photos = photos)
     }
 
-    fun update(realEstateId: Long, realEstate: RealEstate): Boolean {
-        val owner = userRepository.findById(realEstate.ownerId)
-        val newRealEstate = realEstateRepository.findById(realEstate.id)
+    suspend fun update(realEstateId: Long, realEstate: RealEstate): Boolean {
+        val user = userRepository.findById(realEstate.ownerId)
+        val realEstateFromDB = realEstateRepository.findById(realEstateId)
 
-        if (owner.id != newRealEstate.ownerId) {
-            throw UserIsNotOwnerException("Вы пытаетесь изменить чужую запись")
+        return if (user.id != realEstateFromDB.ownerId) {
+            throw Exception("Вы пытаетесь изменить чужую запись")
+        } else {
+            realEstateRepository.update(realEstate)
         }
-
-        return realEstateRepository.update(realEstate)
     }
 
-    fun allRealEstate(): List<RealEstateDto> {
+    suspend fun allRealEstates(limit: Int?, offset: Int?): List<RealEstateDto> {
         return realEstateRepository
-            .findAll()
-            .stream()
+            .findAll(limit, offset)
             .map { realEstateMapper.toRealEstateDto(it) }
-            .collect(Collectors.toList())
     }
 
-    fun allRealEstatesByStatus(status: Status): List<RealEstateDto> {
+    suspend fun allRealEstatesByStatus(status: Status): List<RealEstateDto> {
         return realEstateRepository
             .findAllByStatus(status)
-            .stream()
             .map { realEstateMapper.toRealEstateDto(it) }
-            .collect(Collectors.toList())
+
     }
 
-    fun allByUser(userId: Long): List<RealEstateDto> {
-        val owner = userRepository.findById(userId)
+    suspend fun allByUser(userId: Long): List<RealEstateDto> {
+        val user = userRepository.findById(userId)
         return realEstateRepository
-            .findAllByOwner(owner)
-            .stream()
+            .findAllByOwner(user)
             .map { realEstateMapper.toRealEstateDto(it) }
-            .collect(Collectors.toList())
     }
 
-    fun allRealEstateSortedByName(): List<RealEstateDto> {
+    suspend fun allRealEstateSortedByName(limit: Int?, offset: Int?): List<RealEstateDto> {
         return realEstateRepository
-            .findAll()
-            .stream()
-            .sorted(Comparator.comparing(RealEstate::name))
+            .findAll(limit, offset)
+            .sortedWith(Comparator.comparing(RealEstate::name))
             .map { realEstateMapper.toRealEstateDto(it) }
-            .collect(Collectors.toList())
+
     }
 
-    fun allRealEstateSortedByOwner(): List<RealEstateDto> {
+    suspend fun allRealEstateSortedByOwner(limit: Int?, offset: Int?): List<RealEstateDto> {
         return realEstateRepository
-            .findAll()
-            .stream()
+            .findAll(limit, offset)
             .map { realEstateMapper.toRealEstateDto(it) }
-            .sorted(Comparator.comparing { it.owner.id })
-            .collect(Collectors.toList())
+            .sortedWith(Comparator.comparing { realEstate -> realEstate.owner.id })
     }
 }

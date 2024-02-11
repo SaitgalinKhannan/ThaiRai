@@ -22,7 +22,7 @@ class RealEstateController(
     private val uploadPath: String = ""
 
     @PostMapping("/create")
-    fun create(
+    suspend fun create(
         @RequestPart realEstateDto: RealEstateDto,
         @RequestParam("files") files: List<MultipartFile>
     ): RealEstateDto {
@@ -36,43 +36,51 @@ class RealEstateController(
     }
 
     @GetMapping("/{realEstateId}")
-    fun realEstateById(@PathVariable realEstateId: Long): RealEstateDto {
+    suspend  fun realEstateById(@PathVariable realEstateId: Long): RealEstateDto {
         return realEstateService.realEstateById(realEstateId)
     }
 
     @GetMapping
-    fun all(): List<RealEstateDto> {
-        println("Here")
-        return realEstateService.allRealEstate()
+    suspend fun all(
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): List<RealEstateDto> {
+        return realEstateService.allRealEstates(limit, offset)
     }
 
     @GetMapping("/sort/name")
-    fun allSortedByName(): List<RealEstateDto> {
-        return realEstateService.allRealEstateSortedByName()
+    suspend fun allSortedByName(
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): List<RealEstateDto> {
+        return realEstateService.allRealEstateSortedByName(limit, offset)
     }
 
     @GetMapping("/sort/owner")
-    fun allSortedByOwner(): List<RealEstateDto> {
-        return realEstateService.allRealEstateSortedByOwner()
+    suspend fun allSortedByOwner(
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): List<RealEstateDto> {
+        return realEstateService.allRealEstateSortedByOwner(limit, offset)
     }
 
     @GetMapping("/rent")
-    fun allByStatusRent(): List<RealEstateDto> {
+    suspend fun allByStatusRent(): List<RealEstateDto> {
         return realEstateService.allRealEstatesByStatus(Status.RENT)
     }
 
     @GetMapping("/sale")
-    fun allByStatusSale(): List<RealEstateDto> {
+    suspend fun allByStatusSale(): List<RealEstateDto> {
         return realEstateService.allRealEstatesByStatus(Status.SALE)
     }
 
     @GetMapping("/user/{userId}")
-    fun getAllByUser(@PathVariable userId: Long): List<RealEstateDto> {
+    suspend fun getAllByUser(@PathVariable userId: Long): List<RealEstateDto> {
         return realEstateService.allByUser(userId)
     }
 
     @PatchMapping("/{realEstateId}")
-    fun update(
+    suspend fun update(
         @PathVariable realEstateId: Long,
         @RequestBody realEstateDto: RealEstateDto
     ): Boolean {

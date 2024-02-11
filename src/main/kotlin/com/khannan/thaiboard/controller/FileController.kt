@@ -20,7 +20,7 @@ class FileController(
     private val photoRepository: PhotoRepository
 ) {
     @GetMapping("/download/{id}")
-    fun downloadMovieMedia(
+    suspend fun downloadMovieMedia(
         @PathVariable id: Long, @RequestHeader headers: HttpHeaders
     ): ResponseEntity<StreamingResponseBody> {
         val photo = photoRepository.findById(id)
@@ -63,7 +63,10 @@ class FileController(
     }
 
     @GetMapping("/{id}")
-    fun movieMedia(@RequestHeader headers: HttpHeaders, @PathVariable id: Long): ResponseEntity<ResourceRegion> {
+    suspend fun movieMedia(
+        @RequestHeader headers: HttpHeaders,
+        @PathVariable id: Long
+    ): ResponseEntity<ResourceRegion> {
         val photo = photoRepository.findById(id)
         val media: Resource = FileSystemResource(photo.imageUrl)
         val region = resourceRegion(media, headers)
@@ -73,7 +76,7 @@ class FileController(
         ).body(region)
     }
 
-    private fun resourceRegion(media: Resource, headers: HttpHeaders): ResourceRegion {
+    private suspend fun resourceRegion(media: Resource, headers: HttpHeaders): ResourceRegion {
         var contentLength = 0L
 
         try {

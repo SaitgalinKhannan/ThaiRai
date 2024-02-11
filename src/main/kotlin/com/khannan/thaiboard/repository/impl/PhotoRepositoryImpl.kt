@@ -3,6 +3,9 @@ package com.khannan.thaiboard.repository.impl
 import com.khannan.thaiboard.dto.PhotoDto
 import com.khannan.thaiboard.model.Photo
 import com.khannan.thaiboard.repository.PhotoRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Repository
 import java.sql.Connection
 import java.sql.SQLException
@@ -12,6 +15,7 @@ import javax.sql.DataSource
 @Repository
 class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
     private val connection: Connection = db.connection
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 
     init {
         try {
@@ -23,13 +27,13 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
         }
     }
 
-    override fun findById(id: Long): Photo {
+    override suspend fun findById(id: Long): Photo = withContext(dispatcher) {
         connection.prepareStatement(SELECT_PHOTO_BY_ID).use { statement ->
             statement.setLong(1, id)
             val resultSet = statement.executeQuery()
 
-            if (resultSet.next()) {
-                return with(resultSet) {
+            return@use if (resultSet.next()) {
+                with(resultSet) {
                     Photo(
                         id = getLong(1),
                         realEstateId = getLong(2),
@@ -37,12 +41,12 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
                     )
                 }
             } else {
-                throw Exception("Photo with $id not found")
+                throw Exception("Photo with id = $id not found")
             }
         }
     }
 
-    override fun findAllById(id: Long): List<Photo> {
+    override suspend fun findAllById(id: Long): List<Photo> = withContext(dispatcher) {
         connection.prepareStatement(SELECT_PHOTO_BY_REAL_ESTATE_ID).use { statement ->
             statement.setLong(1, id)
             val resultSet = statement.executeQuery()
@@ -60,25 +64,24 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
                 }
             }
 
-            return photos
+            return@use photos
         }
     }
 
-    override fun create(photoDto: PhotoDto): Boolean {
+    override suspend fun create(photoDto: PhotoDto): Boolean = withContext(dispatcher) {
         connection.prepareStatement(CREATE_PHOTO, Statement.RETURN_GENERATED_KEYS).use { statement ->
             statement.setLong(1, photoDto.realEstateId)
             statement.setString(2, photoDto.imageUrl)
 
             statement.executeUpdate()
             val generatedKeysResultSet = statement.generatedKeys
-            return generatedKeysResultSet.first()
+            return@use generatedKeysResultSet.first()
         }
     }
 
-    override fun createBatch(photos: List<PhotoDto>): List<PhotoDto> {
+    override suspend fun createBatch(photos: List<PhotoDto>): List<PhotoDto> = withContext(dispatcher) {
         connection.autoCommit = false
-
-        return try {
+        return@withContext try {
             connection.prepareStatement(CREATE_PHOTO, Statement.RETURN_GENERATED_KEYS).use { statement ->
                 for (photo in photos) {
                     statement.setLong(1, photo.realEstateId)
@@ -112,21 +115,25 @@ class PhotoRepositoryImpl(db: DataSource) : PhotoRepository {
         }
     }
 
-    override fun update(photoId: Long, photoDto: PhotoDto): Boolean {
+    override suspend fun update(photoId: Long, photoDto: PhotoDto): Result<Boolean> = withContext(dispatcher) {
         connection.prepareStatement(UPDATE_PHOTO_BY_ID).use { statement ->
-            statement.setLong(1, photoDto.realEstateId)
-            statement.setString(2, photoDto.imageUrl)
-            statement.setLong(3, photoDto.id)
-            val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            runCatching {
+                statement.setLong(1, photoDto.realEstateId)
+                statement.setString(2, photoDto.imageUrl)
+                statement.setLong(3, photoDto.id)
+                val resultSet = statement.executeUpdate()
+                return@use Result.success(resultSet > 0)
+            }
         }
     }
 
-    override fun delete(photoId: Long): Boolean {
+    override suspend fun delete(photoId: Long): Result<Boolean> = withContext(dispatcher) {
         connection.prepareStatement(DELETE_PHOTO_BY_ID).use { statement ->
-            statement.setLong(1, photoId)
-            val resultSet = statement.executeUpdate()
-            return resultSet > 0
+            runCatching {
+                statement.setLong(1, photoId)
+                val resultSet = statement.executeUpdate()
+                return@use Result.success(resultSet > 0)
+            }
         }
     }
 

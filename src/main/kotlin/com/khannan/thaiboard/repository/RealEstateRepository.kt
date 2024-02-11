@@ -6,10 +6,10 @@ import com.khannan.thaiboard.model.User
 
 
 interface RealEstateRepository {
-    fun findAllByStatus(status: Status): List<RealEstate>
-    fun findAllByOwner(user: User): List<RealEstate>
-    fun create(realEstate: RealEstate): RealEstate
-    fun findAll(): List<RealEstate>
-    fun findById(id: Long): RealEstate
-    fun update(realEstate: RealEstate): Boolean
+    suspend fun findAllByStatus(status: Status): List<RealEstate>
+    suspend fun findAllByOwner(user: User): List<RealEstate>
+    suspend fun create(realEstate: RealEstate): RealEstate
+    suspend fun findAll(limit: Int?, offset: Int?): List<RealEstate>
+    suspend fun findById(id: Long): RealEstate
+    suspend fun update(realEstate: RealEstate): Boolean
 }
