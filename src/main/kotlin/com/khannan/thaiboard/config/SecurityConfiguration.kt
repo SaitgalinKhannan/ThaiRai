@@ -27,8 +27,10 @@ class SecurityConfiguration(
                 authorizeHttpRequests
                     .requestMatchers("/realestates/create")
                     .authenticated()
-                    .anyRequest()
+                    .requestMatchers("/api/v1/auth/**")
                     .permitAll()
+                    .anyRequest()
+                    .authenticated()
             }
             .sessionManagement { sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authenticationProvider(authenticationProvider)
