@@ -3,6 +3,7 @@ package com.khannan.thaiboard.config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -13,6 +14,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfiguration(
     private val jwtAuthFilter: JwtAuthenticationFilter,
     private val authenticationProvider: AuthenticationProvider,
@@ -23,8 +25,10 @@ class SecurityConfiguration(
         http.csrf { csrf -> csrf.disable() }
             .authorizeHttpRequests { authorizeHttpRequests ->
                 authorizeHttpRequests
-                    .requestMatchers("/realestates/create").authenticated()
-                    .anyRequest().permitAll()
+                    .requestMatchers("/realestates/create")
+                    .authenticated()
+                    .anyRequest()
+                    .permitAll()
             }
             .sessionManagement { sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authenticationProvider(authenticationProvider)

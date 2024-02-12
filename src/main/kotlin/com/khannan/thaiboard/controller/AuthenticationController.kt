@@ -35,6 +35,6 @@ class AuthenticationController(
     suspend fun refreshToken(
         request: HttpServletRequest, response: HttpServletResponse
     ) {
-        authenticationService.refreshToken(request, response)
+        return authenticationService.refreshToken(request, response)
     }
 }

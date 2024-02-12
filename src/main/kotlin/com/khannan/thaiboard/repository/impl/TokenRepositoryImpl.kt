@@ -105,14 +105,13 @@ class TokenRepositoryImpl(db: DataSource) : TokenRepository {
             );
         """
         private const val SELECT_ALL_TOKENS = """
-            select t
+            select t.*
             from tokens t
                 inner join users us
                     on t.user_id = us.id
             where us.id = ?
             and (t.expired = false or t.revoked = false)
         """
-
         private const val SELECT_TOKEN = "SELECT * FROM tokens WHERE token = ?"
         private const val CREATE_TOKEN =
             "INSERT INTO tokens (token, token_type, revoked, expired, user_id) VALUES (?, ?, ?, ?, ?)"

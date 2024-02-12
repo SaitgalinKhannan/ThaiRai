@@ -52,7 +52,7 @@ class AuthenticationService(
         return AuthenticationResponse(jwtToken, refreshToken)
     }
 
-    private suspend fun saveUserToken(userId: Long, jwtToken: String) {
+    private suspend fun saveUserToken(userId: Long, jwtToken: String): Int {
         val token = Token(
             id = 0,
             token = jwtToken,
@@ -61,7 +61,7 @@ class AuthenticationService(
             expired = false,
             userId = userId
         )
-        tokenRepository.save(token)
+        return tokenRepository.save(token)
     }
 
     private suspend fun revokeAllUserTokens(user: User): Boolean {
